@@ -1,0 +1,376 @@
+options
+{
+  static = false;
+  COMMON_TOKEN_ACTION = true;
+  IGNORE_CASE = true;
+}
+
+PARSER_BEGIN(UATokenizer)
+
+import java.util.HashMap;
+import java.io.FileReader;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.FileNotFoundException;
+import java.io.File;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.FileInputStream;
+import java.io.BufferedInputStream;
+
+public class UATokenizer
+{
+  public static void main(String args []) throws ParseException, IOException
+  {
+        //String inputDirectory = args[0], outputDirectory = args[1];
+
+        //long startMemory = Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+
+        File[] files = new File("C:/Users/Owner/Documents/big/").listFiles();
+        int numFiles = files.length;
+        int emailsFound = 0, pricesFound = 0, wordsFound = 0, phonesFound = 0, domainsFound = 0, numTokens = 0;
+
+		
+    	BufferedWriter wordWriter   = new BufferedWriter(new FileWriter("word.txt"));
+        BufferedWriter emailWriter  = new BufferedWriter(new FileWriter("email.txt"));
+    	BufferedWriter priceWriter  = new BufferedWriter(new FileWriter("price.txt"));
+    	BufferedWriter domainWriter = new BufferedWriter(new FileWriter("domain.txt"));
+  	BufferedWriter phoneWriter  = new BufferedWriter(new FileWriter("phone.txt"));
+		
+		
+  	BufferedWriter fileWriter;
+
+        HashMap<String, Integer> nonWordMap = new HashMap<String, Integer>();
+	HashMap<String, Integer> wordMap = new HashMap<String, Integer>();
+
+
+ 	BufferedInputStream bis = null;
+	UATokenizer parser;
+ 	Token t;
+ 	int i = 0;
+	try { 
+		String vowels = "aeiou";
+        while (i < files.length) {
+                                bis = new BufferedInputStream(new FileInputStream(files[i]));
+                                parser = new UATokenizer(bis);
+                                t = parser.getNextToken();
+                                fileWriter = new BufferedWriter(new FileWriter("C:/Users/Owner/Documents/output/" + i + ".html.out"));
+
+           do {
+				
+				t.image = t.image.toLowerCase();
+				
+                                Integer incrementFreq;
+
+                                if (t.kind == WORD) {
+				
+					int len = t.image.length();
+				if (t.image.substring(len -3).indexOf("'") > 0) {
+					t.image = t.image.substring(0, t.image.substring(len - 3).indexOf("'"));	
+			
+				} else if (len > 2 && t.image.substring(len - 2).equals("ed")) {
+			                if (len > 4 &&  (t.image.charAt(len - 3) == 'l'  || t.image.charAt(len - 3) == 'r' || vowels.indexOf(t.image.substring(len - 4, len - 3)) == -1)) {
+			                        t.image = t.image.substring(0,len-1);
+			                } else {
+			                        t.image = t.image.substring(0,len-2);
+			                }
+		
+			                
+						} else if (len > 3 && t.image.substring(len-3).equals("ing")) {
+						  	if(len > 5 && t.image.charAt(len-5) == t.image.charAt(len-4))
+								t.image = t.image.substring(0, len - 4);
+							else
+								t.image = t.image.substring(0, len - 3);
+		
+														
+		                } else if (len > 4 && t.image.substring(len-2).equals("es")) {
+							if (vowels.indexOf(t.image.substring(len-3, len-2)) > 0 )  {
+								t.image = t.image.substring(0, len - 2);
+								if (t.image.substring(t.image.length() - 1).equals("i")) 
+									t.image = t.image.substring(0, t.image.length() - 1) + "y";
+							} else {
+								t.image = t.image.substring(0, len - 1);
+							 }
+								
+						} else if (len > 4 && t.image.substring(len-4).equals("sses")) {
+							t.image = t.image.substring(0, len-2);
+							
+						} else if (len > 4 && (t.image.substring(len-3).equals("ied") || t.image.substring(len-3).equals("ies"))) {
+							t.image = t.image.substring(0, len-3);
+							if (t.image.length() > 1 && vowels.indexOf(t.image.substring(len-1)) == -1) {
+								t.image = t.image.substring(0, len-1) + "y";
+							} else {
+								t.image += "ie";
+							}
+							
+						} else if (t.image.charAt(len-1) == 's' && vowels.indexOf(t.image.substring(len-2, len-1)) == -1) {
+							t.image = t.image.substring(0, len-1);
+							
+						} else if (len > 5 && (t.image.substring(len-5).equals("eedly") || t.image.substring(len - 3).equals("eed"))) {
+							t.image = t.image.substring(0, t.image.indexOf("eed"));
+							if (t.image.length() == 1) {
+								t.image += "eed";
+							}
+						} else if (len > 6 && t.image.substring(len-6).equals("tional")) {
+							t.image = t.image.substring(0, len - 4);
+							
+						} else if ((len > 4 && t.image.substring(len - 4).equals("izer")) || (len > 7 && t.image.substring(len - 7).equals("ization"))) {
+							t.image = t.image.substring(0, t.image.indexOf("iz")) + "ize";
+							
+						} else if (((len > 7 && t.image.substring(len - 7).equals("ational")) || (len > 5 && t.image.substring(len - 5).equals("ation"))) && t.image.substring(0, t.image.indexOf("ation")).length() > 1) {
+							t.image = t.image.substring(0, t.image.indexOf("ation")) + "ate";
+							
+						} else if (len > 4 && t.image.substring(len - 4).equals("ator") && t.image.substring(0, t.image.indexOf("ator")).length() > 1) {
+							t.image = t.image.substring(0, len - 4) + "ate";
+						} else if ((len > 5 && t.image.substring(len - 5).equals("alism")) || (len > 5 && t.image.substring(len - 5).equals("aliti")) || (len > 4 && t.image.substring(len -4).equals("alli"))) { 
+							if ( t.image.indexOf("alism") > 0 || t.image.indexOf("aliti") > 0)
+								t.image = t.image.substring(0, len - 3);
+							else
+								t.image = t.image.substring(0, len - 2); 
+						} else if (len > 7 && (t.image.substring(len - 7).equals("fulness") || t.image.substring(len - 7).equals("ousness") || t.image.substring(len - 7).equals("iveness"))) {
+							t.image = t.image.substring(0, len - 4);
+	
+						} else if (t.image.substring(len - 2).equals("al") || t.image.substring(len - 2).equals("er") || t.image.substring(len - 2).equals("ic")) {
+							t.image = t.image.substring(0, len - 2);
+						} else if (len > 4 && (t.image.substring(len - 4).equals("ance") || t.image.substring(len - 4).equals("ence") || (t.image.charAt( len - 5) != 't' && t.image.substring(len - 4).equals("able")) || t.image.substring (len - 4).equals("ible") || t.image.substring(len - 4).equals("ment") )) {
+							t.image = t.image.substring(0, len - 4);
+						} else if (len > 3 && ((t.image.substring(len - 3).equals("ent")) || t.image.substring(len - 3).equals("ism") || t.image.substring(len - 3).equals("ate") || (t.image.charAt(len - 4) != 'n' && t.image.substring(len - 3).equals("ant")) 
+								|| t.image.substring(len - 3).equals("ous") || t.image.substring(len - 3).equals("ive") || t.image.substring(len - 3).equals("ize"))) {
+							t.image = t.image.substring(0, len - 3);
+						}
+
+
+
+										
+                                        incrementFreq = wordMap.get(t.image);
+                                        if (incrementFreq == null) {
+                                                wordMap.put(t.image, 1);
+                                        } else {
+                                                wordMap.put(t.image, incrementFreq + 1);
+                      			}
+                      					fileWriter.write(t.image);
+										fileWriter.newLine();
+                                        wordWriter.write(t.image);
+										wordWriter.newLine();
+                                        wordsFound++;
+										
+
+                                } else if (t.kind == EMAIL) {
+                                        incrementFreq = nonWordMap.get(t.image);
+                                        if (incrementFreq == null) {
+                                                nonWordMap.put(t.image, 1);
+                                        } else {
+                                               	nonWordMap.put(t.image, incrementFreq + 1);
+                                        }
+                      			fileWriter.write(t.image  + "\n");
+
+                                        emailWriter.write(t.image  + "\n");
+                                        emailsFound++;
+
+
+                                } else if (t.kind == PRICES) {
+                                        incrementFreq = nonWordMap.get(t.image);
+                                        if (incrementFreq == null) {
+                                                nonWordMap.put(t.image, 1);
+                                        } else {
+                                                nonWordMap.put(t.image, incrementFreq + 1);
+                                        }
+                                        fileWriter.write(t.image  + "\n");
+                                        
+					priceWriter.write(t.image  + "\n");
+                                        pricesFound++;
+
+
+                                } else if (t.kind == DOMAIN) {
+                                        incrementFreq = nonWordMap.get(t.image);
+                                        if (incrementFreq == null) {
+                                               nonWordMap.put(t.image, 1);
+                                        } else {
+                                               nonWordMap.put(t.image, incrementFreq + 1);
+                                        }
+                                        fileWriter.write(t.image + "\n");
+					
+                                        domainWriter.write(t.image + "\n");
+					domainsFound++;
+
+
+                                } else {
+                                        if (t.kind == PHONE || t.kind == PHONE2 || t.kind == PHONE3) {
+                                               incrementFreq = nonWordMap.get(t.image);
+                                               if (incrementFreq == null) {
+                                                       nonWordMap.put(t.image, 1);
+                                               } else {
+                                                       nonWordMap.put(t.image, incrementFreq + 1);
+                                               }
+                                               fileWriter.write(t.image + "\n");
+                                               
+					       phoneWriter.write(t.image + "\n");
+					       phonesFound++;
+
+                                    }
+                            }
+        
+                       	t = parser.getNextToken();
+
+                        } while ( t.kind != UATokenizer.EOF );
+                        
+			i++;
+                        fileWriter.close();
+              	}
+
+		} catch (FileNotFoundException e) {
+			i++;
+			
+		}
+		
+        bis.close();                
+        wordWriter.close();
+        emailWriter.close();
+        domainWriter.close();
+        phoneWriter.close();
+        priceWriter.close();
+
+        //System.out.println("TIME OCCURED:\t" + (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
+        System.out.println("NUM TOKENS:\t" + numTokens);
+        System.out.println("NUM FILES:\t" + numFiles);
+        System.out.println("NUM PHONES FOUND:\t" + phonesFound);
+        System.out.println("NUM DOMAINS FOUND:\t" + domainsFound);
+        System.out.println("NUM WORDS FOUND:\t" + wordsFound);
+        System.out.println("NUM PRICES FOUND:\t" + pricesFound);
+        System.out.println("NUM EMAILS FOUND:\t" + emailsFound);
+
+        HashMap<String, Integer > hashMap = new HashMap<String, Integer >();
+       	BufferedReader br;
+		BufferedWriter bw = null;
+		
+		int logicalSize = 0;
+		String current;
+		
+		for (int x = 0; x < numFiles; x++) {
+			
+			br = new BufferedReader(new FileReader("C:/Users/Owner/Documents/output/" + x + ".html.out"));
+			bw = new BufferedWriter(new FileWriter("C:/Users/Owner/Documents/processedTokens/" + x + "p.html.out"));
+			current = br.readLine();			
+			while (current != null) {
+
+				if (current.equals("teraz")) {
+					System.out.println("teraz");
+				}
+				
+				if (wordMap.get(current) == null || (wordMap.get(current) < 35 || wordMap.get(current) > 400000 || current.length() > 8 || current.length() < 3)) {
+					current = br.readLine();
+					continue;
+				
+				} else {
+					bw.write(current);
+					bw.newLine();	
+					current = br.readLine();
+					hashMap.put(current, 1);
+				
+				}
+			}
+			
+			br.close();
+			bw.close();
+
+		}
+		
+		br = new BufferedReader(new FileReader("word.txt"));
+		bw = new BufferedWriter(new FileWriter("word2.txt"));
+		for (int y = 0; y < wordsFound; y++) {
+			String input = br.readLine();
+			if (input != null && hashMap.get(input) != null) {
+				bw.write(input);
+				bw.newLine();
+				logicalSize++;
+			}
+		}
+
+		br.close();
+                
+                //end of main method
+        }
+
+
+
+
+
+		
+		
+/*
+	
+	MUTLITHREADIND
+	IDF (cat, D) = LOG (|D| / d(cat))
+
+
+
+	CREATING GLOBAL HASH TABLE
+		* CREATE A FILE[]
+		* CREATE TOTAL FREQUENCY VARIABLE
+		* CREATE HASHMAP <STRING, INTEGER>
+
+	PURPOSE OF INODE IN LINUX
+
+	POSTINGS FILE
+		* WRITE POSTINGS ALPHABETICALLY
+		* 1234567890123456 16 BYTES PER RECORD
+		* DOCID     RTF*IDF
+		* -----     ------
+	
+
+	
+*/
+	
+} 
+
+PARSER_END(UATokenizer)
+
+
+TOKEN_MGR_DECLS : {
+        void CommonTokenAction(Token t) {
+                 //System.out.printf(  "Type:  %-10s       Token:  %s   %n", UAT
+        }
+}
+
+SKIP :
+{
+  < WHITESPACE: " " >
+| "\r"
+| "\t"
+| "\n"
+| < CHAR: (["0"-"9", "a"-"z", "A"-"Z"]) {0, 1} >
+
+
+}
+
+TOKEN : {
+
+      	<  PICTURES: (<CHARACTERS>)(".")("jpg"|"jpeg"|"png"|"gif"|"tiff"|"pdf"|"bmp") >
+|		<  FILLERWORDS: ("the"|"of"|"and"|"be"|"to"|"it"|"null"|"that"|"this"|"nbsp"|"function"|"var"|"color"|"http"|"font"|"import"|"true"|"false"|"protocol"|"script"|"point"|"event"|"return"|"body"|
+		"width"|"length"|"par"|"text"|"extra"|"undefin"|"plugin"|"typeof"|"ele"|"elem"|"flag"|"func"|"quot"|"href"|"blanks"|"which"|"whom"|"ourselves"|"hers"|"but"|"again"|"there"|"about"|"once"|"doing"|
+		"out"|"very"|"some"|"yours"|"such"|"into"|"most"|"itself"|"other"|"from"|"each"|"themselves"|"until"|"below"|"") >
+|	<  THREELETTERWORDS: (["a"-"z", "A"-"Z"]) {2,3} >
+|      	<  EMAIL : (<CHARACTERS>)("." <CHARACTERS>)?("@")(<CHARACTERS>)(".")(< TOPLEVELDOMAINS >)>
+|       <  PRICES: ("$"|"€"|"¥"|"₩"|"£")(<NUMBER>)+((",")?<NUMBER>(","))+(<NUMBER>)+(["."]<NUMBER><NUMBER>)?>
+|       <  DOMAIN: (<CHARACTERS>) { 3 , 10 }(".")(<TOPLEVELDOMAINS>) { 2, 4 }>
+|       <  PHONE: ("(")(<NUMBER><NUMBER><NUMBER>)(")"|"."|" ")(<PHONE2>) >
+| 	<  PHONE2: (<NUMBER><NUMBER><NUMBER>)("-"|" "|".")(<NUMBER><NUMBER><NUMBER><NUMBER>) >
+| 	<  PHONE3: (("+")(" ")?<NUMBER>) { 1,3 } (< PHONE >) >
+|       <  WORD : ((["a"-"z", "A"-"Z"])+("'"<CHARACTERS>)?){3, 10}  >  //note: matchedToken is a variable defined in javacc
+|       <  HTML: ("<")("/")?("!")?(~["<", ">"])+(">") >
+|       <  HTML2: ("/")(<CHARACTERS>)("/") >
+|       <  HTMLCOMMENTS: ("<!--")(<CHARACTERS>)+("-->") >
+
+}
+
+TOKEN:
+{
+        <  NUMBER: (["0"-"9"]) >
+| 		<  TOPLEVELDOMAINS: ("com"|"org"|"net"|"gov"|"edu"|"info"|"uk"|"co"|"us"|"mil"|"int"|(< CHARACTERS >){ 2,4 } )  >
+|       <  SYMBOLS: (["`", "-", "*", "[", "]", "<", ">", "_", ":", "|", "(", ")", ";","=", ",", "{", "}", "&", "\\", ",", ".", "!", ",", ".", "!", "?", "+", "\""]) >
+|       <  OTHER : ~[] >
+|       <  CHARACTERS: (["0"-"9", "a"-"z","A"-"Z"])+ >
+
+}
+
+
